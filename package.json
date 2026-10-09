@@ -1,0 +1,21 @@
+{
+  "name": "signconnect",
+  "private": true,
+  "description": "Real-time accessible video calling with live captions and sign recognition",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c cyan,green \"npm run dev -w server\" \"npm run dev -w client\"",
+    "dev:https": "concurrently -n server,client -c cyan,green \"npm run dev -w server\" \"npm run dev:https -w client\"",
+    "build": "npm install --include=dev && npm run build -w client",
+    "start": "npm run start -w server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
+}

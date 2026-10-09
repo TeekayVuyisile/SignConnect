@@ -1,0 +1,156 @@
+@import "tailwindcss";
+
+/* Theme follows the user's setting; the `dark` class is toggled on <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design system: design-system/signconnect/MASTER.md ("Accessible & Ethical").
+ * Brand cyan/green are darkened from the generated palette so white text
+ * reaches WCAG AA (cyan-700 5.4:1, emerald-700 5.5:1).
+ */
+:root {
+  --bg: #f4fafb;
+  --surface: #ffffff;
+  --surface-2: #e8f3f6;
+  --text: #0f2a33;
+  --muted: #3d5761;
+  --border: #c5d9df;
+  --primary: #0e7490;
+  --primary-hover: #155e75;
+  --on-primary: #ffffff;
+  --primary-soft: #d5eef4;
+  --accent: #047857;
+  --accent-hover: #065f46;
+  --on-accent: #ffffff;
+  --accent-soft: #d1fae5;
+  --danger: #b91c1c;
+  --danger-hover: #991b1b;
+  --on-danger: #ffffff;
+  --warning-soft: #fef3c7;
+  --warning-text: #78350f;
+  --focus: #0e7490;
+  --hand-fill: #e3f4f8;
+  --hand-fold: #a8d8e3;
+  --hand-line: #0e7490;
+}
+
+.dark {
+  --bg: #071317;
+  --surface: #0e2028;
+  --surface-2: #153039;
+  --text: #e6f4f7;
+  --muted: #a6c1c9;
+  --border: #284652;
+  --primary: #22d3ee;
+  --primary-hover: #67e8f9;
+  --on-primary: #05262e;
+  --primary-soft: #0f3a45;
+  --accent: #34d399;
+  --accent-hover: #6ee7b7;
+  --on-accent: #032b1f;
+  --accent-soft: #0b3b2d;
+  --danger: #f87171;
+  --danger-hover: #fca5a5;
+  --on-danger: #2b0606;
+  --warning-soft: #3b2a06;
+  --warning-text: #fde68a;
+  --focus: #67e8f9;
+  --hand-fill: #123f4b;
+  --hand-fold: #1f6271;
+  --hand-line: #67e8f9;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--on-accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-on-danger: var(--on-danger);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-text: var(--warning-text);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-bg text-text font-sans antialiased;
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    min-height: 100dvh;
+    overscroll-behavior-y: contain;
+  }
+  button, a, [role="button"], label[for], select, summary {
+    touch-action: manipulation;
+  }
+  button:not(:disabled), [role="button"], summary, select {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+    border-radius: 0.75rem;
+  }
+  h1, h2, h3 {
+    line-height: 1.2;
+    text-wrap: balance;
+  }
+}
+
+/* Tailwind v4: classes reused via @apply must be declared with @utility. */
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 font-bold
+         min-h-12 min-w-12 transition-colors duration-200 select-none
+         disabled:opacity-60 disabled:cursor-not-allowed;
+}
+
+@layer components {
+  .btn-primary { @apply btn bg-primary text-on-primary hover:bg-primary-hover; }
+  .btn-accent  { @apply btn bg-accent text-on-accent hover:bg-accent-hover; }
+  .btn-danger  { @apply btn bg-danger text-on-danger hover:bg-danger-hover; }
+  .btn-ghost   { @apply btn border-2 border-border bg-surface text-text hover:bg-surface-2; }
+
+  .field-label { @apply block font-bold mb-1.5; }
+  .field {
+    @apply w-full min-h-12 rounded-2xl border-2 border-border bg-surface px-4 text-text
+           placeholder:text-muted transition-colors duration-200
+           focus:border-primary focus:outline-none;
+    font-size: 1.0625rem; /* >=16px stops iOS from zooming on focus */
+  }
+  .field[aria-invalid="true"] { @apply border-danger; }
+  .card { @apply rounded-3xl border border-border bg-surface; }
+}
+
+.caption-medium { font-size: 1.125rem; }
+.caption-large  { font-size: 1.375rem; }
+.caption-xlarge { font-size: 1.75rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes ring-pulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+  100% { box-shadow: 0 0 0 22px transparent; }
+}
+.ring-pulse { animation: ring-pulse 1.4s ease-out infinite; }
