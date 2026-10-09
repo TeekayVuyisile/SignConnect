@@ -11,7 +11,9 @@ import { readLearned, saveLearned } from '../lib/learnProgress.js';
 const LABELS = Object.keys(DEMO_VOCABULARY);
 const pct = (c) => `${Math.round(c * 100)}%`;
 
-export default function Practice() {
+export default function Practice({ guest = false }) {
+  const backTo = guest ? '/' : '/app/learn';
+  const backLabel = guest ? 'Home' : 'Learn';
   const navigate = useNavigate();
   const reduce = useReducedMotion();
   const [params] = useSearchParams();
@@ -97,14 +99,14 @@ export default function Practice() {
               ? 'We couldn’t use a camera on this device. Allow camera access, or open SignConnect on your phone.'
               : 'Open SignConnect over https:// so your browser allows the camera.'}
           </p>
-          <Link to="/app/learn" className="btn mt-2 bg-white px-6 text-[#06262e] hover:bg-cyan-50">Back to Learn</Link>
+          <Link to={backTo} className="btn mt-2 bg-white px-6 text-[#06262e] hover:bg-cyan-50">Back to {backLabel}</Link>
         </div>
       )}
 
       {/* Top bar */}
       <header className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-2 bg-gradient-to-b from-black/75 to-transparent px-3 pb-10 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <button onClick={() => navigate('/app/learn')} className="btn px-3 text-white hover:bg-white/15">
-          <ArrowLeft className="size-5" aria-hidden="true" /> Learn
+        <button onClick={() => navigate(backTo)} className="btn px-3 text-white hover:bg-white/15">
+          <ArrowLeft className="size-5" aria-hidden="true" /> {backLabel}
         </button>
         <div role="radiogroup" aria-label="Practice mode" className="flex rounded-2xl bg-black/50 p-1">
           {[['guided', 'Guided'], ['free', 'Free play']].map(([v, l]) => (

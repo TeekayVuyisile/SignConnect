@@ -5,6 +5,8 @@ import { CallProvider } from './lib/calls.jsx';
 import AppShell from './components/AppShell.jsx';
 import IncomingCall from './components/IncomingCall.jsx';
 import { Spinner } from './components/ui.jsx';
+import ServerNotice from './components/ServerNotice.jsx';
+import { ServerStatusProvider } from './lib/serverStatus.jsx';
 import Landing from './pages/Landing.jsx';
 import { Login, Register } from './pages/Auth.jsx';
 import Contacts from './pages/Contacts.jsx';
@@ -17,7 +19,12 @@ const Call = lazy(() => import('./pages/Call.jsx'));
 const Practice = lazy(() => import('./pages/Practice.jsx'));
 
 function FullPageSpinner() {
-  return <div className="flex min-h-dvh items-center justify-center"><Spinner /></div>;
+  return (
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-6 px-4">
+      <Spinner />
+      <ServerNotice className="w-full max-w-md" />
+    </div>
+  );
 }
 
 function RequireAuth({ children }) {
@@ -35,6 +42,7 @@ function GuestOnly({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <ServerStatusProvider>
       <SessionProvider>
         <CallProvider>
           <Routes>
@@ -48,12 +56,15 @@ export default function App() {
               <Route path="settings" element={<Settings />} />
             </Route>
             <Route path="/call" element={<RequireAuth><Suspense fallback={<FullPageSpinner />}><Call /></Suspense></RequireAuth>} />
+            {/* Public: the sign AI runs fully in the browser, so it works before the API wakes. */}
+            <Route path="/demo" element={<Suspense fallback={<FullPageSpinner />}><Practice guest /></Suspense>} />
             <Route path="/practice" element={<RequireAuth><Suspense fallback={<FullPageSpinner />}><Practice /></Suspense></RequireAuth>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <IncomingCall />
         </CallProvider>
       </SessionProvider>
+      </ServerStatusProvider>
     </BrowserRouter>
   );
 }

@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { api } from '../lib/api.js';
 import { useSession } from '../lib/session.jsx';
 import { Alert, Field, Logo, MODES } from '../components/ui.jsx';
+import ServerNotice from '../components/ServerNotice.jsx';
 
 function AuthLayout({ title, subtitle, children, footer }) {
   return (
@@ -18,6 +19,7 @@ function AuthLayout({ title, subtitle, children, footer }) {
         <main className="mt-8">
           <h1 className="text-3xl font-bold">{title}</h1>
           <p className="mt-2 text-muted text-lg">{subtitle}</p>
+          <ServerNotice className="mt-6" />
           <div className="mt-8">{children}</div>
           <p className="mt-8 text-center text-muted">{footer}</p>
         </main>

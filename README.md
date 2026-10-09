@@ -42,16 +42,28 @@ self-signed certificate warning ("Advanced → Proceed"), sign up, and allow cam
 Then open the same URL on the laptop with a second account, add each other as
 contacts, and call. If Windows Firewall asks, allow Node on private networks.
 
-## Deploy (phone over the internet)
+## Deploy (free)
 
-`npm run build && npm start` serves the API, signaling and built app from one Node
-process on `$PORT`. `render.yaml` sets this up on Render's free tier
-(New → Blueprint → select the repo). Set `JWT_SECRET` in production.
+`render.yaml` is a Render Blueprint with two free services:
+
+| Service | What | Why |
+|---|---|---|
+| `signconnect-app` (static site) | The app people visit | Served from a CDN and never sleeps, so it loads instantly |
+| `signconnect` (web service) | API + call signaling | Free instances sleep when idle and take up to a minute to wake |
+
+On load the app pings `/api/health` and shows a "Waking up the demo server…" notice only
+if the API is asleep. **`/demo`** (sign recognition practice) needs no account or server, so
+visitors can try it while the API wakes.
+
+The two services need each other's public URL: `VITE_API_URL` on the static site and
+`CLIENT_ORIGINS` (comma-separated, used for CORS) on the API. Update both in `render.yaml` if
+your URLs differ.
 
 Notes:
 - **SQLite on free hosts is wiped on redeploy.** Fine for demos; use a persistent disk or move to PostgreSQL for real use.
-- **TURN server:** STUN alone fails on some mobile networks/CGNAT. Set `ICE_SERVERS` to a JSON array including a TURN server (e.g. from Metered or Twilio):
-  `[{"urls":"stun:stun.l.google.com:19302"},{"urls":"turn:host:3478","username":"u","credential":"p"}]`
+- **Mobile data:** calls use free public STUN servers, which connect most networks directly.
+  Some strict mobile-data networks need a TURN relay. To add one later, set `ICE_SERVERS` to
+  a JSON array of ICE servers from any provider. No code change is needed.
 
 ## Learn & practice
 

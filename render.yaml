@@ -1,4 +1,9 @@
-# One-click deploy on Render (https://render.com): New > Blueprint > pick this repo.
+# Render Blueprint (New > Blueprint > pick this repo). Everything here is on free plans.
+#
+#  signconnect-app  static site: the app people visit. Served from Render's CDN and
+#                   never sleeps, so it loads instantly and wakes the API in the background.
+#  signconnect      web service: API + call signaling. Free instances sleep when idle
+#                   and take up to a minute to wake. It also serves the app on its own URL.
 services:
   - type: web
     name: signconnect
@@ -14,3 +19,22 @@ services:
         value: 22.17.1
       - key: JWT_SECRET
         generateValue: true
+      # The static site's public URL (allowed to call this API from the browser).
+      - key: CLIENT_ORIGINS
+        value: https://signconnect-app.onrender.com
+
+  - type: web
+    name: signconnect-app
+    runtime: static
+    buildCommand: npm install --include=dev && npm run build -w client
+    staticPublishPath: ./client/dist
+    envVars:
+      - key: NODE_VERSION
+        value: 22.17.1
+      # The API's public URL, baked into the build.
+      - key: VITE_API_URL
+        value: https://signconnect-em1p.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

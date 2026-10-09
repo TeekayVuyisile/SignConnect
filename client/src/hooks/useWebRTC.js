@@ -21,6 +21,7 @@ export function useWebRTC({ enabled, role, localStream, mediaReady, sendSignal, 
     let disposed = false;
     const pendingCandidates = [];
     let offered = false;
+    let restarted = false;
     let unsubscribe = () => {};
 
     const bindChannel = (dc) => {
@@ -54,8 +55,19 @@ export function useWebRTC({ enabled, role, localStream, mediaReady, sendSignal, 
         });
       };
       pc.onicecandidate = (e) => { if (e.candidate) sendSignal({ type: 'candidate', candidate: e.candidate.toJSON() }); };
-      pc.onconnectionstatechange = () => {
+      pc.onconnectionstatechange = async () => {
         const s = pc.connectionState;
+        // One ICE restart (e.g. after switching from Wi-Fi to mobile data) before giving up.
+        if (s === 'failed' && role === 'caller' && !restarted && pc.signalingState === 'stable') {
+          restarted = true;
+          setState('reconnecting');
+          try {
+            await pc.setLocalDescription(await pc.createOffer({ iceRestart: true }));
+            sendSignal({ type: 'offer', sdp: pc.localDescription.sdp });
+            return;
+          } catch { /* fall through to failed */ }
+        }
+        if (s === 'connected') restarted = false;
         setState(s === 'connected' ? 'connected' : s === 'disconnected' ? 'reconnecting' : s === 'failed' ? 'failed' : 'connecting');
       };
 

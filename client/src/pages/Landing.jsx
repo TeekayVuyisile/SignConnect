@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Captions, Hand, Keyboard, Lock, Mic, Smartphone, Volume2 } from 'lucide-react';
 import { Logo } from '../components/ui.jsx';
+import ServerNotice from '../components/ServerNotice.jsx';
 
 function CallPreview() {
   // A static, decorative rendering of the call screen.
@@ -65,9 +66,16 @@ export default function Landing() {
               person reads live captions, sign translations or hears them aloud.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link to="/demo" className="btn-accent px-7 text-lg">
+                <Hand className="size-5" aria-hidden="true" /> Try the sign demo
+              </Link>
               <Link to="/register" className="btn-primary px-7 text-lg">Create a free account</Link>
-              <Link to="/login" className="btn-ghost px-7 text-lg">I have an account</Link>
             </div>
+            <p className="mt-3 text-muted">
+              The demo needs no account, just your camera.{' '}
+              <Link to="/login" className="font-bold text-primary underline underline-offset-4">Sign in</Link> if you already have one.
+            </p>
+            <ServerNotice showDemoLink={false} className="mt-5 max-w-[34rem]" />
           </div>
           <CallPreview />
         </section>

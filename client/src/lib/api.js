@@ -1,5 +1,9 @@
 const TOKEN_KEY = 'sc-token';
 
+// Empty when the API serves this page itself; set (VITE_API_URL) when the
+// frontend is hosted separately as a static site.
+export const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
+
 export const tokenStore = {
   get() { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } },
   set(t) { try { localStorage.setItem(TOKEN_KEY, t); } catch { /* private mode */ } },
@@ -21,7 +25,7 @@ export async function api(path, { method = 'GET', body } = {}) {
 
   let res;
   try {
-    res = await fetch(`/api${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    res = await fetch(`${API_BASE}/api${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
   } catch {
     throw new ApiError('Can’t reach SignConnect. Check your connection and try again.', 0);
   }

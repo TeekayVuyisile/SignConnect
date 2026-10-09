@@ -2,7 +2,7 @@
 // Lives above the router so an incoming call can ring on any screen.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
-import { tokenStore } from './api.js';
+import { API_BASE, tokenStore } from './api.js';
 import { useSession } from './session.jsx';
 
 const CallContext = createContext(null);
@@ -25,7 +25,7 @@ export function CallProvider({ children }) {
 
   useEffect(() => {
     if (!user) return;
-    const s = io({ auth: { token: tokenStore.get() }, transports: ['websocket', 'polling'] });
+    const s = io(API_BASE || undefined, { auth: { token: tokenStore.get() }, transports: ['websocket', 'polling'] });
     setSocket(s);
 
     s.on('connect', () => setConnected(true));

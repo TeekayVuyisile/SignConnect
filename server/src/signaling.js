@@ -12,8 +12,8 @@ const activeCalls = new Map();
 
 const userRoom = (id) => `user:${id}`;
 
-export function attachSignaling(httpServer) {
-  const io = new Server(httpServer, { cors: { origin: false } });
+export function attachSignaling(httpServer, allowedOrigins = []) {
+  const io = new Server(httpServer, { cors: { origin: allowedOrigins.length ? allowedOrigins : false } });
 
   io.use((socket, next) => {
     try {
