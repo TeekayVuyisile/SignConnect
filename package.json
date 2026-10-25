@@ -1,6 +1,7 @@
 {
   "name": "signconnect",
   "private": true,
+  "license": "MIT",
   "description": "Real-time accessible video calling with live captions and sign recognition",
   "workspaces": [
     "server",

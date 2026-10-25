@@ -191,3 +191,7 @@ server/src/
 | 4–5 | Sign → text during calls | 🟡 Preview (demo gestures, on-device) |
 | 6 | Text → speech | ✅ Done |
 | 7 | SASL dataset (consent-based landmark recording) + custom model, signer-video lessons | ⏳ Next |
+
+## License
+
+[MIT](LICENSE). Free to use, modify and share, with attribution.
