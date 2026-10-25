@@ -1,22 +1,116 @@
 # SignConnect
 
-Real-time accessible video calling: each person signs, speaks or types, and the other
-person reads live captions or sign translations (or hears them read aloud).
+**Real-time accessible video calling: sign, speak or type, and be understood.**
 
-Built in phases, following [`New project.txt`](New%20project.txt). This build covers:
+Each person in a call chooses how they communicate. Speech becomes live captions, hand signs
+are recognised on-device and sent as text (or read aloud), and typed messages appear as
+captions. It's built with South African Sign Language (SASL) in mind.
 
-| Phase | What | Status |
+### ▶ Live demo: **[signconnect-app.onrender.com](https://signconnect-app.onrender.com/)**
+
+> Tap **Try the sign demo** to see on-device sign recognition with your camera, no account
+> needed. To try a call, create two accounts (e.g. phone + laptop), add each other as
+> contacts, and call. The API runs on free hosting, so the first request after a quiet
+> spell can take up to a minute; the app tells you when that happens.
+
+---
+
+## Screenshots
+
+| Landing page |
+|---|
+| <img src="docs/screenshots/landing.png" alt="Landing page with the headline 'Talk your way. Be understood.', buttons to try the sign demo or create an account, and a phone mock-up of a call with captions" width="820"> |
+
+| Contacts | Incoming call | In a call |
 |---|---|---|
-| 1 | Accounts, contacts, accessibility preferences | Done |
-| 2 | 1-to-1 WebRTC video calls (P2P, Socket.IO signaling) | Done |
-| 3 | Live speech → captions (browser speech recognition, sent P2P) | Done |
-| 4–5 | Sign → text during calls | **Preview**: MediaPipe gestures mapped to 7 phrases, on-device |
-| 6 | Text → speech | Done (sign + typed messages read aloud) |
-| 7 | SASL dataset + custom model | Next |
+| <img src="docs/screenshots/contacts.png" alt="Contacts list showing each person's communication mode (signs, speaks, types) and online status" width="260"> | <img src="docs/screenshots/incoming-call.png" alt="Full-screen incoming call with large accept and decline buttons" width="260"> | <img src="docs/screenshots/call.png" alt="Call screen with a live caption log of typed messages and large call controls including Sign AI and Captions" width="260"> |
 
-Design system: generated with the **ui-ux-pro-max** skill, see
-[`design-system/signconnect/MASTER.md`](design-system/signconnect/MASTER.md)
-("Accessible & Ethical" style, Atkinson Hyperlegible, cyan/emerald darkened for WCAG AA).
+| Learn signs | Sign lesson | Settings | Delete account |
+|---|---|---|---|
+| <img src="docs/screenshots/learn.png" alt="Grid of demo signs, each shown as an animated hand drawing" width="200"> | <img src="docs/screenshots/sign-detail.png" alt="Lesson for 'Thank you' with an animated hand, numbered steps and a camera tip" width="200"> | <img src="docs/screenshots/settings.png" alt="Settings in light mode: communication mode and in-call accessibility toggles" width="200"> | <img src="docs/screenshots/delete-account.png" alt="Delete account confirmation listing what will be removed and asking for the password" width="200"> |
+
+## Features
+
+- **1-to-1 video calls** over WebRTC (peer-to-peer), with multi-device ringing, vibration
+  and a flashing tab title for incoming calls, and call history.
+- **Live speech captions.** The speaker's browser transcribes their speech (South African
+  English) and streams interim results to the other person while they talk.
+- **Sign recognition, on-device.** MediaPipe tracks the hands in the browser and recognised
+  signs are sent as captions with a confidence bar. Low-confidence results are shown as
+  "Possibly: …" rather than presented as fact.
+- **Typed messages and read-aloud.** Type mid-call; sign and typed messages can be spoken
+  aloud for hearing participants.
+- **Learn & practise.** Animated hand-shape lessons (SVG + Motion) and a camera practice
+  mode that confirms when a sign is recognised.
+- **Accessible by design.** WCAG AA contrast, Atkinson Hyperlegible font, three caption
+  sizes, 44 px+ touch targets, keyboard and screen-reader support, reduced-motion support,
+  and light/dark themes.
+- **Works without a camera.** Devices with no camera join calls receive-only.
+- **Account control.** Users can permanently delete their account, contacts and call
+  history from Settings (password-confirmed).
+
+## Architecture
+
+```mermaid
+flowchart TB
+    subgraph Render["Render · free tier"]
+        direction LR
+        STATIC["Static site (CDN)<br/>signconnect-app<br/>never sleeps"]
+        API["Node.js API<br/>Express + Socket.IO<br/>auth · contacts · history"]
+        DB[("SQLite")]
+        API --- DB
+    end
+
+    A["Caller's browser<br/>React app<br/>on-device speech + sign AI"]
+    B["Callee's browser<br/>React app<br/>on-device speech + sign AI"]
+    STUN["Public STUN servers"]
+
+    STATIC -- "app files" --> A & B
+    A <-- "REST + signaling" --> API
+    B <-- "REST + signaling" --> API
+    A <== "WebRTC peer-to-peer<br/>video · audio · captions" ==> B
+    A & B -. "NAT discovery" .-> STUN
+```
+
+**Key design decision:** the server never touches media or captions. It handles accounts
+and signaling only; video, audio and caption text flow directly between the two browsers.
+Speech and sign recognition run on each user's own device, so camera video is never uploaded
+for AI processing. That gives lower latency, better privacy and near-zero server cost.
+
+### How a call is set up
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as Caller (browser)
+    participant S as Signaling server
+    participant B as Callee (browser)
+
+    A->>S: call:invite (to contact)
+    S->>B: call:incoming (rings on every device)
+    B->>S: call:accept
+    S->>A: call:accepted
+    B->>S: signal: ready
+    S->>A: relay ready
+    A->>S: signal: SDP offer
+    S->>B: relay offer
+    B->>S: signal: SDP answer
+    S->>A: relay answer
+    A-->>B: ICE candidates (relayed via server)
+    A->>B: WebRTC media + data channel (direct, peer-to-peer)
+    Note over A,B: Captions, sign translations and typed<br/>messages travel over the data channel
+```
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, Vite, Tailwind CSS v4, React Router, Motion, Lucide icons |
+| Real-time | WebRTC (media + data channel), Socket.IO (signaling, presence) |
+| On-device AI | MediaPipe Tasks Vision (gesture recognition), Web Speech API (captions), Speech Synthesis (read-aloud) |
+| Backend | Node.js 22, Express, Socket.IO, `node:sqlite`, bcrypt, JWT |
+| Hosting | Render Blueprint: static site (CDN) + web service, both free tier |
+| Design | Design system generated with the ui-ux-pro-max skill ([`MASTER.md`](design-system/signconnect/MASTER.md)) |
 
 ## Run it locally
 
@@ -24,81 +118,76 @@ Requires Node 22.13+.
 
 ```bash
 npm install
-npm run dev          # server :4010 + client http://localhost:5180
+npm run dev          # API on :4010 + app on http://localhost:5180
 ```
 
-The laptop works without a camera: it joins calls receive-only and shows an avatar tile.
+A laptop without a camera still works: it joins calls receive-only.
 
-## Test on your phone (same Wi-Fi)
+### Test on your phone (same Wi-Fi)
 
-Phones only allow camera/mic on **HTTPS**, so use:
+Phones only allow camera and microphone access over **HTTPS**:
 
 ```bash
 npm run dev:https
 ```
 
-Vite prints a `Network: https://192.168.x.x:5180` URL. Open it on the phone, accept the
-self-signed certificate warning ("Advanced → Proceed"), sign up, and allow camera + mic.
-Then open the same URL on the laptop with a second account, add each other as
-contacts, and call. If Windows Firewall asks, allow Node on private networks.
+Open the `Network: https://192.168.x.x:5180` URL Vite prints, accept the self-signed
+certificate warning, sign up and allow camera + mic. Use a second account on the laptop to
+call the phone. If Windows Firewall asks, allow Node on private networks.
 
 ## Deploy (free)
 
 `render.yaml` is a Render Blueprint with two free services:
 
-| Service | What | Why |
+| Service | Role | Why |
 |---|---|---|
 | `signconnect-app` (static site) | The app people visit | Served from a CDN and never sleeps, so it loads instantly |
-| `signconnect` (web service) | API + call signaling | Free instances sleep when idle and take up to a minute to wake |
+| `signconnect` (web service) | API + signaling | Free instances sleep when idle and take up to a minute to wake |
 
-On load the app pings `/api/health` and shows a "Waking up the demo server…" notice only
-if the API is asleep. **`/demo`** (sign recognition practice) needs no account or server, so
-visitors can try it while the API wakes.
+On load the app pings `/api/health` and shows a "Waking up the demo server…" notice only if
+the API is asleep. `/demo` needs neither an account nor the server.
 
-The two services need each other's public URL: `VITE_API_URL` on the static site and
-`CLIENT_ORIGINS` (comma-separated, used for CORS) on the API. Update both in `render.yaml` if
-your URLs differ.
+The services reference each other's public URLs: `VITE_API_URL` on the static site and
+`CLIENT_ORIGINS` (CORS allow-list) on the API. Update both in `render.yaml` if yours differ.
 
-Notes:
-- **SQLite on free hosts is wiped on redeploy.** Fine for demos; use a persistent disk or move to PostgreSQL for real use.
-- **Mobile data:** calls use free public STUN servers, which connect most networks directly.
-  Some strict mobile-data networks need a TURN relay. To add one later, set `ICE_SERVERS` to
-  a JSON array of ICE servers from any provider. No code change is needed.
+- **SQLite on the free tier is wiped on each redeploy.** Fine for a demo; use a persistent
+  disk or PostgreSQL for real use.
+- **Mobile data:** free public STUN servers connect most networks directly. Some strict
+  mobile networks need a TURN relay, which you can add via `ICE_SERVERS` (JSON) without code changes.
 
-## Learn & practice
-
-- **Learn tab** (`/app/learn`): each demo sign as an animated SVG hand-shape (Motion), with steps
-  and a camera tip, plus the planned SASL modules.
-- **Practice** (`/practice`): uses your camera with on-device recognition. *Guided* mode gives you
-  a sign to make and ticks it off when recognised; *Free play* shows whatever you sign, just as a
-  call would. This is the quickest way to test sign AI on one phone.
-- Signs live in `client/src/lib/signVocabulary.js`. Each has `media: { kind: 'handshape' }`
-  (animated SVG, which suits static handshapes and fingerspelling) or `media: { kind: 'video' }`
-  (planned for real SASL signs, recorded by Deaf signers, since movement and facial
-  expression carry meaning).
-
-## How it fits together
+## Project structure
 
 ```
-client/ (React + Vite + Tailwind v4)
-  lib/calls.jsx            socket, presence, call state machine (ringing works on every screen)
-  hooks/useLocalMedia.js   camera/mic with graceful fallback: A+V → audio → none
-  hooks/useWebRTC.js       peer connection + "captions" data channel
-  hooks/useSpeechCaptions  Web Speech API, interim results, auto-restart (lang en-ZA)
-  hooks/useSignRecognition MediaPipe GestureRecognizer, on-device, stabilised over 10 frames
-  pages/Call.jsx           call UI: captions log (aria-live), confidence bars, controls
-server/ (Express + Socket.IO + node:sqlite)
-  signaling.js             invite/accept/decline/end, 45 s ring timeout, SDP/ICE relay only
-  routes/                  auth (bcrypt + JWT), contacts, call history, preferences
+client/src/
+  lib/calls.jsx              socket, presence, call state machine
+  lib/serverStatus.jsx       wakes the API and reports "waking up" status
+  lib/signVocabulary.js      sign content: handshapes, steps, planned SASL modules
+  hooks/useLocalMedia.js     camera/mic with graceful fallback (A+V → audio → none)
+  hooks/useWebRTC.js         peer connection, captions data channel, ICE restart
+  hooks/useSpeechCaptions.js Web Speech API captions (en-ZA), auto-restart
+  hooks/useSignRecognition.js MediaPipe gestures, stabilised over 10 frames
+  components/HandSign.jsx    parametric animated SVG hand
+  pages/                     Landing, Auth, Contacts, Recents, Learn, Practice, Call, Settings
+server/src/
+  signaling.js               invite/accept/decline/end, ring timeout, SDP/ICE relay
+  routes/                    auth (incl. account deletion), contacts, history, preferences
+  db.js                      schema (portable SQL, PostgreSQL-ready)
 ```
-
-Media and caption text never pass through the server. Speech captions are produced on
-the speaker's device, sign recognition on the signer's device, and both are sent over the
-WebRTC data channel.
 
 ## Honest limits
 
-- The sign vocabulary is generic hand gestures (open palm = "Hello", thumbs up = "Yes", …),
-  **not SASL**. Results under 75% confidence are shown as "Possibly: …".
-- Speech captions depend on browser support (Chrome, Edge, Safari). Firefox has none. Some
-  Android devices can't run speech recognition and a WebRTC call on the mic at the same time.
+- The current sign vocabulary is **general hand gestures, not SASL** (open palm = "Hello",
+  thumbs up = "Yes", …). It demonstrates the pipeline while a proper SASL vocabulary is built.
+- Speech captions depend on browser support (Chrome, Edge, Safari; not Firefox). Some Android
+  devices can't run speech recognition and a WebRTC call on the microphone at the same time.
+
+## Roadmap
+
+| Phase | What | Status |
+|---|---|---|
+| 1 | Accounts, contacts, accessibility preferences | ✅ Done |
+| 2 | 1-to-1 WebRTC video calls | ✅ Done |
+| 3 | Live speech → captions | ✅ Done |
+| 4–5 | Sign → text during calls | 🟡 Preview (demo gestures, on-device) |
+| 6 | Text → speech | ✅ Done |
+| 7 | SASL dataset (consent-based landmark recording) + custom model, signer-video lessons | ⏳ Next |

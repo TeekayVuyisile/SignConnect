@@ -11,13 +11,21 @@ const RING_TIMEOUT_MS = 45_000;
 const activeCalls = new Map();
 
 const userRoom = (id) => `user:${id}`;
+let ioRef = null;
+
+/** Drop every live connection for a user (used when their account is deleted). */
+export function disconnectUser(userId) {
+  ioRef?.in(userRoom(userId)).disconnectSockets(true);
+}
 
 export function attachSignaling(httpServer, allowedOrigins = []) {
   const io = new Server(httpServer, { cors: { origin: allowedOrigins.length ? allowedOrigins : false } });
+  ioRef = io;
 
   io.use((socket, next) => {
     try {
       const { sub, name } = verifyToken(socket.handshake.auth?.token ?? '');
+      if (!db.prepare('SELECT 1 FROM users WHERE id = ?').get(Number(sub))) throw new Error('deleted');
       socket.data.userId = Number(sub);
       socket.data.name = name;
       next();
