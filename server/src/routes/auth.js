@@ -2,6 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { db, getPreferences } from '../db.js';
 import { signToken, requireAuth, publicUser } from '../auth.js';
+import { disconnectUser } from '../signaling.js';
 
 const router = Router();
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -49,6 +50,19 @@ router.get('/me', requireAuth, (req, res) => {
   const user = db.prepare('SELECT id, name, email FROM users WHERE id = ?').get(req.userId);
   if (!user) return res.status(401).json({ error: 'Account not found.' });
   res.json({ user, preferences: getPreferences(user.id) });
+});
+
+// Permanently delete the signed-in account. Preferences, contacts (both directions)
+// and call history are removed by ON DELETE CASCADE.
+router.delete('/me', requireAuth, (req, res) => {
+  const user = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(req.userId);
+  if (!user) return res.status(404).json({ error: 'Account not found.' });
+  if (!bcrypt.compareSync(String(req.body?.password ?? ''), user.password_hash)) {
+    return res.status(401).json({ error: 'That password is incorrect.', fields: { password: 'That password is incorrect.' } });
+  }
+  db.prepare('DELETE FROM users WHERE id = ?').run(req.userId);
+  disconnectUser(req.userId);
+  res.status(204).end();
 });
 
 export default router;

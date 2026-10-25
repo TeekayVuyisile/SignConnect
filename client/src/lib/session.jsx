@@ -54,9 +54,16 @@ export function SessionProvider({ children }) {
     }
   }, []);
 
+  /** Permanently deletes the account (password-confirmed), then signs out locally. */
+  const deleteAccount = useCallback(async (password) => {
+    await api('/auth/me', { method: 'DELETE', body: { password } });
+    try { localStorage.removeItem('sc-learned-signs'); } catch { /* ignore */ }
+    signOut();
+  }, [signOut]);
+
   const value = useMemo(
-    () => ({ user, preferences, loading, acceptSession, signOut, updatePreferences }),
-    [user, preferences, loading, acceptSession, signOut, updatePreferences],
+    () => ({ user, preferences, loading, acceptSession, signOut, updatePreferences, deleteAccount }),
+    [user, preferences, loading, acceptSession, signOut, updatePreferences, deleteAccount],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

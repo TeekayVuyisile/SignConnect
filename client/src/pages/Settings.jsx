@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Captions, CheckCircle2, Hand, LogOut, Monitor, Moon, ShieldCheck, Sun, Volume2, XCircle } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { AlertTriangle, Captions, CheckCircle2, Hand, LogOut, Trash2, Monitor, Moon, ShieldCheck, Sun, Volume2, XCircle } from 'lucide-react';
 import { useSession } from '../lib/session.jsx';
 import { speechRecognitionSupported } from '../hooks/useSpeechCaptions.js';
 import { ttsSupported, speak } from '../lib/tts.js';
-import { Alert, MODES, Switch } from '../components/ui.jsx';
+import { Alert, Field, MODES, Switch } from '../components/ui.jsx';
 
 function Section({ title, description, children }) {
   return (
@@ -76,8 +77,69 @@ function DeviceCheck() {
   );
 }
 
+function DeleteAccountDialog({ email, onCancel, onDelete }) {
+  const reduce = useReducedMotion();
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && !busy && onCancel();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [busy, onCancel]);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await onDelete(password);
+    } catch (err) {
+      setError(err.message);
+      setBusy(false);
+    }
+  };
+
+  return (
+    <motion.div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 md:items-center"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+      onClick={() => !busy && onCancel()}>
+      <motion.form role="alertdialog" aria-modal="true" aria-labelledby="del-title" aria-describedby="del-desc"
+        onSubmit={submit} onClick={(e) => e.stopPropagation()}
+        initial={reduce ? false : { y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={reduce ? undefined : { y: 40, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+        className="w-full max-w-md rounded-t-3xl bg-surface p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:rounded-3xl">
+        <span className="flex size-12 items-center justify-center rounded-2xl bg-warning-soft">
+          <AlertTriangle className="size-6 text-danger" aria-hidden="true" />
+        </span>
+        <h2 id="del-title" className="mt-3 text-2xl font-bold">Delete your account?</h2>
+        <div id="del-desc" className="mt-2 text-muted">
+          <p>This permanently deletes <span className="font-bold text-text">{email}</span> and can’t be undone:</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            <li>your profile and settings</li>
+            <li>your contacts (you’ll disappear from their lists too)</li>
+            <li>your call history</li>
+          </ul>
+        </div>
+        <div className="mt-4">
+          <Field label="Enter your password to confirm" type="password" autoComplete="current-password" autoFocus required
+            value={password} onChange={(e) => { setPassword(e.target.value); setError(null); }} error={error} />
+        </div>
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button type="button" className="btn-ghost" onClick={onCancel} disabled={busy}>Keep my account</button>
+          <button type="submit" className="btn-danger" disabled={busy || !password}>
+            <Trash2 className="size-5" aria-hidden="true" /> {busy ? 'Deleting…' : 'Delete permanently'}
+          </button>
+        </div>
+      </motion.form>
+    </motion.div>
+  );
+}
+
 export default function Settings() {
-  const { user, preferences: p, updatePreferences, signOut } = useSession();
+  const { user, preferences: p, updatePreferences, signOut, deleteAccount } = useSession();
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState(null);
 
   const set = (patch) => {
@@ -142,6 +204,20 @@ export default function Settings() {
           <LogOut className="size-5" aria-hidden="true" /> Sign out
         </button>
       </Section>
+
+      <section className="rounded-3xl border-2 border-danger/50 p-5" aria-labelledby="danger-title">
+        <h2 id="danger-title" className="text-xl font-bold">Delete account</h2>
+        <p className="mt-1 text-muted">Permanently remove your account, contacts and call history.</p>
+        <button onClick={() => setConfirmDelete(true)} className="btn mt-4 w-full border-2 border-danger text-danger hover:bg-danger hover:text-on-danger sm:w-auto">
+          <Trash2 className="size-5" aria-hidden="true" /> Delete my account
+        </button>
+      </section>
+
+      <AnimatePresence>
+        {confirmDelete && (
+          <DeleteAccountDialog email={user.email} onCancel={() => setConfirmDelete(false)} onDelete={deleteAccount} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

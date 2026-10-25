@@ -324,7 +324,7 @@ export default function Call() {
           )}
           <span className="absolute bottom-1.5 left-1.5 rounded-md bg-black/60 px-1.5 text-xs font-bold">You</span>
         </div>
-        {signOn && media.hasVideo && (
+        {signOn && media.hasVideo && sign.status !== 'off' && (
           <p className="mt-2 rounded-xl bg-black/65 px-2 py-1.5 text-center text-[0.8rem] font-bold leading-tight" role="status">
             {sign.status === 'loading' && 'Loading sign AI…'}
             {sign.status === 'error' && 'Sign AI couldn’t load'}
